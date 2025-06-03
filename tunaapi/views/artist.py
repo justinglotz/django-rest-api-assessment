@@ -43,7 +43,7 @@ class ArtistView(ViewSet):
         )
 
         serializer = ArtistSerializer(artist)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk):
         """Handle PUT requests for an artist

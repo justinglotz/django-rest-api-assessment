@@ -36,7 +36,7 @@ class GenreView(ViewSet):
         )
 
         serializer = GenreSerializer(genre)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk):
         """Handle PUT requests for a genre
