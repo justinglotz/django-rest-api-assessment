@@ -17,6 +17,15 @@ class ArtistView(ViewSet):
         artist = Artist.objects.get(pk=pk)
         serializer = ArtistSerializer(artist)
 
+    def list(self, request):
+        """Handle GET requests to get all artists
+
+        Returns: JSON serialized list of all artists
+        """
+        artists = Artist.objects.all()
+        serializer = ArtistSerializer(artists, many=True)
+        return Response(serializer.data)
+
     def create(self, request):
         """Handle POST requests for artists
 
