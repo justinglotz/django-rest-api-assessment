@@ -30,6 +30,12 @@ class ArtistView(ViewSet):
         serializer = ArtistSerializer(artist)
         return Response(serializer.data)
 
+    def destroy(self, request, pk):
+        """Handle DELETE requests for artist"""
+        artist = Artist.objects.get(pk=pk)
+        artist.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ArtistSerializer(serializers.ModelSerializer):
     """JSON serializer for artists"""
