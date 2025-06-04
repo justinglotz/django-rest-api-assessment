@@ -14,7 +14,7 @@ class GenreView(ViewSet):
 
         Returns: JSON serialized genre
         """
-        genre = Genre.objects.get(pk=pk)
+        genre = Genre.objects.filter(pk=pk).annotate(song_count=Count)
         serializer = GenreSerializer(genre)
 
     def list(self, request):
