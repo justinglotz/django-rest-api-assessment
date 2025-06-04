@@ -3,7 +3,7 @@ from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers, status
-from tunaapi.models import Genre
+from tunaapi.models import Genre, Song
 
 
 class GenreView(ViewSet):
@@ -14,8 +14,9 @@ class GenreView(ViewSet):
 
         Returns: JSON serialized genre
         """
-        genre = Genre.objects.filter(pk=pk).annotate(song_count=Count)
-        serializer = GenreSerializer(genre)
+        genre = Genre.objects.get(pk=pk)
+        serializer = SingleGenreSerializer(genre)
+        return Response(serializer.data)
 
     def list(self, request):
         """Handle GET requests to get all genres
@@ -66,3 +67,17 @@ class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
         fields = ('id', 'description')
+
+
+class SingleGenreSerializer(serializers.ModelSerializer):
+    """JSON serializer for a single genre"""
+    songs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Genre
+        fields = ('id', 'description', 'songs')
+
+    def get_songs(self, obj):
+        from tunaapi.views import SongSerializer
+        songs = Song.objects.filter(songgenre__genre=obj)
+        return SongSerializer(songs, many=True).data
