@@ -4,6 +4,8 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers, status
 from tunaapi.models import Genre, Song
+from rest_framework.decorators import action
+from django.db.models import Count
 
 
 class GenreView(ViewSet):
@@ -60,6 +62,16 @@ class GenreView(ViewSet):
         genre.delete()
         return Response(None, status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['get'], detail=False)
+    def popular(self, request):
+        """GET request to get popular genres"""
+        # Gets list of genre objects that have an entry in SongGenre(this counts the songs without needing a join table)
+        # Orders by song count, DESCENDING (not django's default)
+        genres = Genre.objects.annotate(
+            song_count=Count('songgenre')).order_by('-song_count')
+        serializer = PopularGenreSerializer(genres, many=True)
+        return Response({'genres': serializer.data})
+
 
 class GenreSerializer(serializers.ModelSerializer):
     """JSON serializer for genres"""
@@ -81,3 +93,12 @@ class SingleGenreSerializer(serializers.ModelSerializer):
         from tunaapi.views import SongSerializer
         songs = Song.objects.filter(songgenre__genre=obj)
         return SongSerializer(songs, many=True).data
+
+
+class PopularGenreSerializer(serializers.ModelSerializer):
+    """JSON serializer for list of genres by song count"""
+    song_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Genre
+        fields = ('id', 'description', 'song_count')
