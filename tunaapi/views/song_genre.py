@@ -23,6 +23,25 @@ class SongGenreView(ViewSet):
         serializer = SongGenreSerializer(songGenre)
         return Response(serializer.data)
 
+    def list(self, request):
+        """Handle GET requests to get all song genres
+
+        Returns: JSON serialized list of all song genres
+        """
+        song_genres = SongGenre.objects.all()
+
+        serializer = AllSongGenreSerializer(song_genres, many=True)
+        return Response(serializer.data)
+
+    def destroy(self, request, pk):
+        """Handle DELETE requests for song genres
+
+        Returns: empty body with 204 status code"""
+
+        song_genre = SongGenre.objects.get(pk=pk)
+        song_genre.delete()
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
+
 
 class SongGenreSerializer(serializers.ModelSerializer):
     """JSON serializer for song genres"""
@@ -30,3 +49,12 @@ class SongGenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = SongGenre
         fields = ('id', 'song', 'genre')
+
+
+class AllSongGenreSerializer(serializers.ModelSerializer):
+    """JSON serializer for song genres"""
+
+    class Meta:
+        model = SongGenre
+        fields = ('id', 'song', 'genre')
+        depth = 2
