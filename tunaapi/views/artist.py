@@ -3,7 +3,9 @@ from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers, status
-from tunaapi.models import Artist, Song
+from tunaapi.models import Artist, Song, SongGenre, Genre
+from rest_framework.decorators import action
+
 from django.db.models import Count
 
 
@@ -68,6 +70,48 @@ class ArtistView(ViewSet):
         artist.delete()
         return Response(None, status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['get'], detail=True)
+    def related(self, request, pk):
+        """GET request to get related artists"""
+        # Get the artist for this request
+        this_artist = Artist.objects.get(pk=pk)
+
+        # Filter songGenre instances where the artist attribute of the song is the same as this one
+        filtered_songgenres = SongGenre.objects.filter(
+            song__artist=this_artist)
+        most_common = (
+            # The values of all the genre fields in filtered_songgenres
+            filtered_songgenres.values('genre')
+            # For each genre, count the number of times that genre appears in the queryset
+            .annotate(count=Count('genre'))
+            # Order by count, with the most represented genre listed first
+            .order_by('-count')
+            # Get the first entry, which should be the most common genre in the list
+            .first()
+        )
+        this_artist.most_common_genre = most_common['genre'] if most_common else None
+
+        related_artists = []
+        artists = Artist.objects.exclude(pk=pk)
+        for artist in artists:
+            filtered_songgenres = SongGenre.objects.filter(
+                song__artist=artist)
+            most_common = (
+                # The values of all the genre fields in filtered_songgenres
+                filtered_songgenres.values('genre')
+                # For each genre, count the number of times that genre appears in the queryset
+                .annotate(count=Count('genre'))
+                # Order by count, with the most represented genre listed first
+                .order_by('-count')
+                # Get the first entry, which should be the most common genre in the list
+                .first()
+            )
+            artist.most_common_genre = most_common['genre'] if most_common else None
+            if artist.most_common_genre is not None and artist.most_common_genre == this_artist.most_common_genre:
+                related_artists.append(artist)
+        serializer = RelatedArtistSerializer(related_artists, many=True)
+        return Response({'artists': serializer.data})
+
 
 class ArtistSerializer(serializers.ModelSerializer):
     """JSON serializer for artists"""
@@ -85,3 +129,11 @@ class SingleArtistSerializer(serializers.ModelSerializer):
         model = Artist
         fields = ('id', 'name', 'age', 'bio', 'song_count', 'songs')
         depth = 1
+
+
+class RelatedArtistSerializer(serializers.ModelSerializer):
+    """JSON serializer for related artists"""
+
+    class Meta:
+        model = Artist
+        fields = ('id', 'name')
