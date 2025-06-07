@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import serializers, status
 from tunaapi.models import Song, Artist, Genre, SongGenre
 from tunaapi.views import GenreSerializer
+from tunaapi.filters import SongFilter
 
 
 class SongView(ViewSet):
@@ -24,7 +25,9 @@ class SongView(ViewSet):
 
         Returns: JSON serialized list of all songs
         """
-        songs = Song.objects.all()
+
+        filterset = SongFilter(data=request.GET, queryset=Song.objects.all())
+        songs = filterset.qs
         serializer = SongSerializer(songs, many=True)
         return Response(serializer.data)
 
